@@ -1,7 +1,9 @@
-case class BookDetails(genre: String, pageCount: Int)
+import scala.math.Ordering.Implicits.infixOrderingOps
+
+case class BookDetails(genre: String, pageCount: Int, publisher: Publisher)
 
 case class Publisher(name: String, year:Int, publisherInfo: PublisherInfo){
-  def getPublishername: String = publisherInfo.name
+  def getPublisherName: String = publisherInfo.name
   def getPublisherIsModern: Boolean = publisherInfo.isModern
 }
 
@@ -19,13 +21,19 @@ class Book(title: String, author: String, year: Int, private val bookDetails: Bo
   // by not exposing the Book instance directly but rather the specific information needed for the analyse
   def getGenre: String = bookDetails.genre
   def getPageCount: Int = bookDetails.pageCount
+  def getPublisher: Publisher = bookDetails.publisher
+  def getYear: Int = year
+  def getTitle: String = title
 
 }
 
 object Book {
 
-  def unapply(book: Book): Option[(String, Int)] =
-    Some(book.bookDetails.genre, book.bookDetails.pageCount)
+  def unapply(book: Book): Option[(String, Int, Int, Boolean)] =
+    Some((book.getTitle, book.getYear, book.bookDetails.pageCount, book.bookDetails.publisher.getPublisherIsModern))
+
+//  def unapply1(book: Book): Option[(String, Int)] =
+//    Some((book.getGenre, book.bookDetails.pageCount))  
 }
 
 sealed trait Category
@@ -33,6 +41,7 @@ case object Fiction extends Category
 case object NonFiction extends Category
 case object Short extends Category
 case object Long extends Category
+case object ModernPublisher extends Category
 
 val fictionGenre = "Fiction"
 val pageCountThreshold: Int = 300
@@ -58,21 +67,24 @@ def analyse(book: Book): Set[Category] =
     case Book(fiction, _) if fiction == fictionGenre => Set(Fiction)
     case _ => Set(NonFiction, Short)
 
-def analyseSecondVersion(book: Book): Set[Category] = book match {
+def analyseSecondVersion(book: Book): Set[Category] = book match 
   case Book(`fictionGenre`, pageCount, _, isModern) if pageCount >= pageCountThreshold && isModern => Set(Fiction, Long, ModernPublisher)
   case Book(`fictionGenre`, _, _, _) => Set(Fiction)
   case Book(_, pageCount, _, isModern) if pageCount >= pageCountThreshold && isModern => Set(Long, ModernPublisher)
   case Book(_, _, _, isModern) if isModern => Set(ModernPublisher)
   case _ => Set(NonFiction, Short)
-}
 
+
+
+val penguinPublisher = Publisher("Penguin", 2023, PublisherInfo("Penguin", true))
 
 val books = List(
-  new Book("1984", "George Orwell", 1949, BookDetails("Dystopian", 328)),
-  new Book("To Kill a Mockingbird", "Harper Lee", 1960, BookDetails("Fiction", 281)),
-  new Book("The Great Gatsby", "F. Scott Fitzgerald", 1925, BookDetails("Fiction", 180)),
-  new Book("A Brief History of Time", "Stephen Hawking", 1988, BookDetails("Non-Fiction", 212))
+  new Book("1984", "George Orwell", 1949, BookDetails("Dystopian", 328, penguinPublisher)),
+  new Book("To Kill a Mockingbird", "Harper Lee", 1960, BookDetails("Fiction", 281, penguinPublisher)),
+  new Book("The Great Gatsby", "F. Scott Fitzgerald", 1925, BookDetails("Fiction", 180, penguinPublisher)),
+  new Book("A Brief History of Time", "Stephen Hawking", 1988, BookDetails("Non-Fiction", 212, penguinPublisher))
 )
+
 
 
 
